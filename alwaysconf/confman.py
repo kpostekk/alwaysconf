@@ -7,24 +7,29 @@ from alwaysconf.conffield import ConfigField
 
 
 class AnyConfig:
-    data = {}
+    data: Optional[dict] = None
 
     def __init__(self, name: Optional[str] = None, forced_path: Optional[Path] = None):
         if name is None:
             p = Path(__file__) if forced_path is None else forced_path
             name = f'{p.parent.name}/{p.name.split(".")[0]}'
         self._name = name
-        self.__path = Path().home().joinpath(f'.config/{self._name}.yml') if forced_path is None else forced_path
+        self.__path = Path.home().joinpath(f'.config/{self._name}.yml') if forced_path is None else forced_path
         self.__register_fields()
         self.load()
+
+    @classmethod
+    def local(cls, name='config'):
+        return cls(name, Path.cwd().joinpath(f'{name}.yml'))
 
     def load(self):
         if self.__path.exists():
             with self.__path.open('r', encoding='utf-8') as file:
                 self.data = yaml.safe_load(file)
-                if self.data is None:
-                    self.data = {}
-                    self.update()
+
+        if self.data is None:
+            self.data = {}
+            self.update()
 
         for name, field in self.__fields:
             field.value = self.data.get(name)
